@@ -10,6 +10,33 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
-    - name: make
-      run: make eat-ram
+    - uses: actions/checkout@v4
+      with:
+        path: eat-ram
+
+    - name: Cache Cosmopolitan Libc
+      id: cache-cosmopolitan
+      uses: actions/cache@v4
+      with:
+        path: cosmo
+        key: ${{ runner.os }}-cosmo
+
+    - name: Download Cosmopolitan Libc
+      if: steps.cache-cosmopolitan.outputs.cache-hit != 'true'
+      run: |
+        mkdir -p $GITHUB_WORKSPACE/cosmo
+        cd $GITHUB_WORKSPACE/cosmo
+        wget https://cosmo.zip/pub/cosmocc/cosmocc.zip
+        unzip -qo cosmocc.zip
+        rm -fv cosmocc.zip
+
+    - name: Build
+      run: make COSMOCC=$GITHUB_WORKSPACE/cosmo/bin/cosmocc -C eat-ram
+
+    - name: Archive
+      uses: actions/upload-artifact@v4
+      with:
+        name: binaries
+        path: |
+          eat-ram/eat-ram
+          eat-ram/eat-ram.com
